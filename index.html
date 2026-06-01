@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RE1 PS1 Model Viewer Prototype</title>
+    <link rel="stylesheet" href="./src/styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="viewport" aria-label="3D model viewport">
+        <canvas id="viewer" width="1280" height="900"></canvas>
+        <div class="viewport-toolbar">
+          <button id="resetCamera" type="button" title="Reset camera">Reset</button>
+          <label class="toggle" title="Show polygon edges">
+            <input id="wireframe" type="checkbox">
+            <span>Wire</span>
+          </label>
+          <label class="toggle" title="Play simple skeleton animation">
+            <input id="animate" type="checkbox">
+            <span>Anim</span>
+          </label>
+          <label class="toggle" title="Use decoded model texture">
+            <input id="textureToggle" type="checkbox" checked>
+            <span>Tex</span>
+          </label>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <header>
+          <p class="eyebrow">Prototype</p>
+          <h1>RE1 PS1 model viewer</h1>
+        </header>
+
+        <div id="dropZone" class="drop-zone" tabindex="0">
+          <strong>Drop files here</strong>
+          <span>Start with extracted disc folders, `.EMD`, `.TIM`, or later your ISO.</span>
+          <input id="filePicker" type="file" multiple>
+        </div>
+
+        <section class="panel">
+          <h2>Loaded Model</h2>
+          <dl id="modelStats"></dl>
+        </section>
+
+        <section class="panel">
+          <h2>Files</h2>
+          <ul id="fileList" class="file-list"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Parser Notes</h2>
+          <ol id="parserNotes" class="notes"></ol>
+        </section>
+      </aside>
+    </main>
+
+    <script src="./src/app.js"></script>
+  </body>
+</html>
