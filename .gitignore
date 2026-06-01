@@ -1,2 +1,53 @@
+# Git / local junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local convenience scripts
+start-viewer.bat
+
+# Logs
+*.log
+server.err.log
+server.out.log
+
+# Dependencies / build output
+node_modules/
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local game/media data
 local-disc/
 local-extract/
+roms/
+iso/
+isos/
+disc/
+discs/
+extracts/
+extracted/
+game-files/
+user-files/
+
+# Proprietary game/media assets
+*.iso
+*.bin
+*.cue
+*.img
+*.mdf
+*.mds
+*.emd
+*.tim
+*.adt
+*.bss
+*.sap
+*.vh
+*.vb
+*.xa
+*.str
