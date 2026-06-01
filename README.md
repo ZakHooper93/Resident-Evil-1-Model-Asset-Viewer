@@ -1,28 +1,19 @@
 # RE1 PS1 Model Viewer Prototype
 
+Access on GitHub Pages here - https://zakhooper93.github.io/Resident-Evil-1-Model-Asset-Viewer/
+
 This is the first working slice of a browser-based Resident Evil 1 PS1 model viewer.
 
-## What works now
+YOU MUST PROVIDE YOUR OWN BIN FILES. I am not getting sued by Capcom, thanks!
 
-- WebGL viewport with orbit, zoom, reset, wireframe, and simple animation toggles.
-- A segmented low-poly placeholder model so the renderer is proven before RE-specific parsing.
-- File drop/picker that recognizes `.EMD`, `.TIM`, and disc image candidates.
-- First-pass `.EMD` mesh loading for untextured triangle models.
-- A basic PSX `.TIM` header detector.
-- Basic ISO9660 sniffing for 2048-byte ISO images and 2352-byte raw BIN images.
+Upon loading an RE1, you will have an option to preload all of the data. This is recommended.
 
-## What comes next
+Currently, the viewer allows you to view all character, enemy (with animations) and item models with textures and wireframe options.
+It also allowed you to view all image files, included static UI elements and all prerendered background images, with zoom and pan functionality.
 
-1. Improve EMD primitive support if we find quads or variant packet types.
-2. Add extraction from the BIN directly in the browser.
-3. Add texture upload from embedded `.TIM` data.
-4. Add skeleton pose and animation playback.
 
-## Learning Notes
 
-The viewer and parser are deliberately separate. The viewer only needs vertices, triangle indices,
-colors, and later texture coordinates. The parser's job is to translate RE1/PS1 binary data into
-that simple shape.
+There is a patreon button if you wanted to buy me a drink. Ironically, I don't drink coffee anymore! ☕
 
 Run it from a local server:
 
@@ -30,3 +21,8 @@ Run it from a local server:
 cd re1-model-viewer-prototype
 node server.js
 ```
+<img width="1902" height="924" alt="image" src="https://github.com/user-attachments/assets/4f6ff54c-3230-44e9-80fb-4b1845636937" />
+<img width="1903" height="924" alt="image" src="https://github.com/user-attachments/assets/90e1aad6-f123-4d33-aeec-572543afd780" />
+<img width="1905" height="926" alt="image" src="https://github.com/user-attachments/assets/eabb69e7-7f34-4f66-9b9d-5a5ec3953f14" />
+<img width="1908" height="923" alt="image" src="https://github.com/user-attachments/assets/9b275f82-b8f7-466a-baeb-1476eefa1495" />
+<img width="1905" height="915" alt="image" src="https://github.com/user-attachments/assets/1730aedf-8bf0-4271-8b8a-c0a5fff39aca" />
