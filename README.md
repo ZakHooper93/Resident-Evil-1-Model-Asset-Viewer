@@ -2,27 +2,9 @@
 
 This is the first working slice of a browser-based Resident Evil 1 PS1 model viewer.
 
-## What works now
+YOU MUST PROVIDE YOUR OWN BIN FILES. I am not getting sued by Capcom, thanks!
 
-- WebGL viewport with orbit, zoom, reset, wireframe, and simple animation toggles.
-- A segmented low-poly placeholder model so the renderer is proven before RE-specific parsing.
-- File drop/picker that recognizes `.EMD`, `.TIM`, and disc image candidates.
-- First-pass `.EMD` mesh loading for untextured triangle models.
-- A basic PSX `.TIM` header detector.
-- Basic ISO9660 sniffing for 2048-byte ISO images and 2352-byte raw BIN images.
-
-## What comes next
-
-1. Improve EMD primitive support if we find quads or variant packet types.
-2. Add extraction from the BIN directly in the browser.
-3. Add texture upload from embedded `.TIM` data.
-4. Add skeleton pose and animation playback.
-
-## Learning Notes
-
-The viewer and parser are deliberately separate. The viewer only needs vertices, triangle indices,
-colors, and later texture coordinates. The parser's job is to translate RE1/PS1 binary data into
-that simple shape.
+There is a patreon button if you wanted to buy me a drink. Ironically, I don't drink coffee anymore! ☕
 
 Run it from a local server:
 
