@@ -9,49 +9,174 @@
   <body>
     <main class="app">
       <section class="viewport" aria-label="3D model viewport">
+        <span class="viewport-rivet rivet-top-left" aria-hidden="true"></span>
+        <span class="viewport-rivet rivet-top-right" aria-hidden="true"></span>
+        <span class="viewport-rivet rivet-bottom-left" aria-hidden="true"></span>
+        <span class="viewport-rivet rivet-bottom-right" aria-hidden="true"></span>
         <canvas id="viewer" width="1280" height="900"></canvas>
         <div class="viewport-toolbar">
-          <button id="resetCamera" type="button" title="Reset camera">Reset</button>
-          <label class="toggle" title="Show polygon edges">
-            <input id="wireframe" type="checkbox">
-            <span>Wire</span>
-          </label>
-          <label class="toggle" title="Play simple skeleton animation">
-            <input id="animate" type="checkbox">
-            <span>Anim</span>
-          </label>
-          <label class="toggle" title="Use decoded model texture">
-            <input id="textureToggle" type="checkbox" checked>
-            <span>Tex</span>
-          </label>
+          <div class="toolbar-group" aria-label="Viewer options">
+            <button id="resetCamera" type="button" title="Reset camera to the model's default view">Reset</button>
+            <button class="view-button" type="button" data-view="front" title="Front view">Front</button>
+            <button class="view-button" type="button" data-view="back" title="Back view">Back</button>
+            <button class="view-button" type="button" data-view="left" title="Show the model's left side">Left</button>
+            <button class="view-button" type="button" data-view="right" title="Show the model's right side">Right</button>
+            <button class="view-button" type="button" data-view="top" title="Top-down view">Top</button>
+            <button class="view-button" type="button" data-view="bottom" title="Bottom view">Bottom</button>
+          </div>
+          <div class="toolbar-group" aria-label="Render options">
+            <label class="toggle" title="Show polygon edges over the model">
+              <input id="wireframe" type="checkbox" checked>
+              <span>Wire</span>
+            </label>
+            <label class="toggle" title="Use decoded model texture">
+              <input id="textureToggle" type="checkbox" checked>
+              <span>Tex</span>
+            </label>
+          </div>
+          <div class="toolbar-group animation-tools" aria-label="Animation options">
+            <label class="toggle" title="Play detected animation clip">
+              <input id="animate" type="checkbox" checked>
+              <span>Anim</span>
+            </label>
+            <select id="animationSelect" class="clip-select" title="Detected animation clip">
+              <option value="">No clips</option>
+            </select>
+            <label class="speed-control" title="How quickly detected animation frames are stepped through">
+              <span>Speed</span>
+              <input id="animationFps" type="range" min="1" max="60" value="30">
+              <output id="animationFpsValue" for="animationFps">30</output>
+            </label>
+          </div>
+        </div>
+        <div class="viewport-help">Drag to rotate. Middle drag or Shift-drag to pan. Wheel to zoom.</div>
+        <aside id="debugOverlay" class="debug-overlay" aria-label="Technical details">
+          <section id="debugStatsSection" class="debug-section">
+            <h2 id="debugStatsTitle">Loaded Asset</h2>
+            <dl id="modelStats"></dl>
+          </section>
+          <section id="debugAnimationSection" class="debug-section">
+            <h2>Animation Inspector</h2>
+            <div id="animationInspector" class="animation-inspector">Load an animated EMD to inspect detected clips.</div>
+          </section>
+          <section id="debugFilesSection" class="debug-section debug-extra-section">
+            <h2>Files</h2>
+            <ul id="fileList" class="file-list"></ul>
+          </section>
+          <section id="debugNotesSection" class="debug-section debug-extra-section">
+            <h2>Parser Notes</h2>
+            <ol id="parserNotes" class="notes"></ol>
+          </section>
+        </aside>
+        <div id="busyOverlay" class="busy-overlay is-hidden" role="status" aria-live="polite">
+          <div class="busy-card">
+            <strong id="busyTitle">Loading disc</strong>
+            <span id="busyMessage">Reading files from the image...</span>
+            <progress id="busyProgress" max="100" value="0"></progress>
+          </div>
+        </div>
+        <div id="preloadPrompt" class="preload-prompt is-hidden" role="dialog" aria-modal="true" aria-labelledby="preloadTitle">
+          <div class="preload-card">
+            <strong id="preloadTitle">Build asset previews?</strong>
+            <p>
+              This renders model thumbnails and decodes image/room previews up front. Previews will not be immediately available otherwise. Takes 15-60 seconds.
+            </p>
+            <div class="preload-actions">
+              <button id="preloadNow" type="button">Build previews</button>
+              <button id="preloadSkip" type="button">Skip for now</button>
+            </div>
+          </div>
+        </div>
+        <div id="imageViewer" class="image-viewer is-hidden" aria-label="Image asset viewer">
+          <div class="image-frame">
+            <div class="image-frame-header">
+              <div>
+                <strong id="imageTitle">Image asset</strong>
+                <span id="imageMeta">Decoded PS1 image data</span>
+              </div>
+            </div>
+            <div id="imageScreens" class="image-screens is-hidden" aria-label="Room screen selector"></div>
+            <div class="image-stage">
+              <div class="image-help">Wheel to zoom. Drag to pan.</div>
+              <button id="resetImageView" class="image-reset" type="button" title="Reset image zoom and pan">Reset</button>
+              <img id="imagePreview" alt="">
+            </div>
+          </div>
         </div>
       </section>
 
       <aside class="sidebar">
-        <header>
+        <header class="inventory-title">
           <p class="eyebrow">Prototype</p>
           <h1>RE1 PS1 model viewer</h1>
         </header>
 
-        <div id="dropZone" class="drop-zone" tabindex="0">
-          <strong>Drop files here</strong>
-          <span>Start with extracted disc folders, `.EMD`, `.TIM`, or later your ISO.</span>
-          <input id="filePicker" type="file" multiple>
-        </div>
-
-        <section class="panel">
-          <h2>Loaded Model</h2>
-          <dl id="modelStats"></dl>
+        <section class="command-panel">
+          <div class="command-grid">
+            <div id="dropZone" class="drop-zone" tabindex="0">
+              <strong>Load Disc</strong>
+              <span>BIN / ISO / model</span>
+              <input id="filePicker" type="file" multiple>
+            </div>
+            <button id="prevModel" type="button" title="Previous matching asset">Prev</button>
+            <button id="nextModel" type="button" title="Next matching asset">Next</button>
+          </div>
         </section>
 
-        <section class="panel">
-          <h2>Files</h2>
-          <ul id="fileList" class="file-list"></ul>
+        <section class="panel status-panel">
+          <a class="patreon-button" href="https://www.patreon.com/" target="_blank" rel="noreferrer" title="Support the project on Patreon">
+            <span>Support</span>
+            <strong>Patreon</strong>
+          </a>
+          <div class="ecg-slot" aria-label="Viewer status">
+            <svg class="ecg-line" viewBox="0 0 360 64" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <polyline points="0,36 54,36 70,28 84,47 99,36 162,36 180,16 197,54 215,36 286,36 306,27 326,36 360,36"></polyline>
+            </svg>
+            <strong>Fine</strong>
+          </div>
         </section>
 
-        <section class="panel">
-          <h2>Parser Notes</h2>
-          <ol id="parserNotes" class="notes"></ol>
+        <section class="panel primary-panel">
+          <h2>Inventory</h2>
+          <div class="asset-toolbar">
+            <input id="assetSearch" type="search" placeholder="Search models, images, rooms, paths">
+            <select id="assetFilter" aria-label="Asset filter">
+              <option value="all">All assets</option>
+              <option value="character">Characters</option>
+              <option value="model">Enemies</option>
+              <option value="item">Items</option>
+              <option value="texture">TIM textures</option>
+              <option value="background">Room backgrounds</option>
+            </select>
+            <label class="toggle asset-toggle" title="Animate 3D model changes with a pickup-style spin">
+              <input id="modelTransitionToggle" type="checkbox" checked>
+              <span>FX</span>
+            </label>
+          </div>
+          <div id="modelDock" class="model-dock is-empty" aria-label="Model tile selector"></div>
+          <div id="modelList" class="model-list"></div>
+        </section>
+
+        <section class="panel hidden-panel">
+          <h2>Images</h2>
+          <div class="asset-toolbar">
+            <input id="imageSearch" type="search" placeholder="Search TIMs, rooms, paths">
+            <select id="imageFilter" aria-label="Image filter">
+              <option value="all">All images</option>
+              <option value="texture">TIM textures</option>
+              <option value="background">Room backgrounds</option>
+            </select>
+          </div>
+          <div class="asset-nav">
+            <button id="prevImage" type="button" title="Previous image asset">Previous</button>
+            <button id="nextImage" type="button" title="Next image asset">Next</button>
+          </div>
+          <div id="imageList" class="image-list"></div>
+        </section>
+
+        <section class="panel utility-panel" aria-label="Viewer utilities">
+          <button id="debugToggle" class="utility-button" type="button" title="Show technical details" aria-controls="debugOverlay" aria-expanded="false">i</button>
+          <button id="settingsButton" class="utility-button" type="button" title="Settings placeholder" disabled aria-disabled="true">⚙</button>
         </section>
       </aside>
     </main>

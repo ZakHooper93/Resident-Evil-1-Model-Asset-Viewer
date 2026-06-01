@@ -38,6 +38,7 @@ try {
 
   printGroup("Sample EMD files", emd.slice(0, 40));
   printGroup("Sample TIM files", tim.slice(0, 40));
+  printGroup("Item-ish files", files.filter((entry) => /ITEM|KEY|WEAPON|ARMS|OBJ|FILE|MAP/i.test(entry.path)).slice(0, 140));
 } finally {
   fs.closeSync(file);
 }

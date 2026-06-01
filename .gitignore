@@ -4,8 +4,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local convenience scripts
+# Local convenience stuff
 start-viewer.bat
+*.zip
 
 # Logs
 *.log
@@ -18,6 +19,7 @@ dist/
 build/
 
 # Environment / secrets
+research/
 .env
 .env.*
 !.env.example
