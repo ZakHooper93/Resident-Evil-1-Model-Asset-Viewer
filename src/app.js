@@ -31,6 +31,10 @@ const parserNotes = document.querySelector("#parserNotes");
 const debugOverlay = document.querySelector("#debugOverlay");
 const debugToggle = document.querySelector("#debugToggle");
 const settingsButton = document.querySelector("#settingsButton");
+const settingsPanel = document.querySelector("#settingsPanel");
+const soundToggle = document.querySelector("#soundToggle");
+const soundVolume = document.querySelector("#soundVolume");
+const soundVolumeValue = document.querySelector("#soundVolumeValue");
 const dropZone = document.querySelector("#dropZone");
 const filePicker = document.querySelector("#filePicker");
 const resetCamera = document.querySelector("#resetCamera");
@@ -52,8 +56,10 @@ const prevImage = document.querySelector("#prevImage");
 const nextImage = document.querySelector("#nextImage");
 
 const buttonBeep = new Audio("./src/sfx/button-beep.wav");
-buttonBeep.volume = 0.35;
 buttonBeep.preload = "auto";
+const soundControlSelector =
+  "button, .toggle, select, .drop-zone, .patreon-button, input[type='checkbox'], input[type='range']";
+const allowedUploadExtensions = new Set(["bin"]);
 
 if (!gl) {
   throw new Error("WebGL is not available in this browser.");
@@ -109,6 +115,8 @@ const state = {
   lastAnimFrameAt: 0,
   animationFps: loadAnimationFps(),
   modelTransitionEnabled: loadModelTransitionEnabled(),
+  soundEnabled: loadSoundEnabled(),
+  soundVolume: loadSoundVolume(),
   modelTransition: null,
 };
 
@@ -180,16 +188,29 @@ renderImageList();
 populateAnimationSelect(currentModel);
 syncAnimationFpsControl();
 syncRenderControls();
+syncSoundControls();
 setupTooltips();
 setNotes([
   "This first build proves the viewer: camera, low-poly mesh drawing, wire overlay, and animation.",
   "PS1 models are usually fixed-point vertices plus polygon packets. We convert those into normal GPU triangles.",
   "TIM files decode as normal PS1 images. BSS room backgrounds use an experimental STRv3/MDEC still-frame decoder and may need more tuning.",
 ]);
+setupSettingsButton();
 
 requestAnimationFrame(draw);
 
+function setupSettingsButton() {
+  settingsButton.disabled = false;
+  settingsButton.removeAttribute("aria-disabled");
+  settingsButton.setAttribute("aria-controls", "settingsPanel");
+  settingsButton.setAttribute("aria-expanded", "false");
+  settingsButton.setAttribute("title", "Viewer settings");
+  settingsButton.textContent = "\u2699";
+}
+
 function playButtonBeep() {
+  if (!state.soundEnabled || state.soundVolume <= 0) return;
+  buttonBeep.volume = state.soundVolume;
   buttonBeep.currentTime = 0;
   buttonBeep.play().catch(() => {
     // Browser may ignore audio if it was not triggered by a user action.
@@ -197,14 +218,28 @@ function playButtonBeep() {
 }
 
 document.addEventListener("pointerdown", (event) => {
-  const control = event.target.closest("button, .drop-zone");
-
+  const control = audibleControlFromEvent(event);
   if (!control) return;
-  if (control.matches("button") && control.disabled) return;
-  if (state.busyDepth > 0) return;
 
   playButtonBeep();
 });
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const control = audibleControlFromEvent(event);
+  if (!control) return;
+
+  playButtonBeep();
+});
+
+function audibleControlFromEvent(event) {
+  const control = event.target.closest(soundControlSelector);
+  if (!control) return null;
+  if (control.matches("input[type='file']")) return null;
+  if (control.disabled || control.getAttribute("aria-disabled") === "true") return null;
+  if (state.busyDepth > 0 && !control.closest("#preloadPrompt")) return null;
+  return control;
+}
 
 resetCamera.addEventListener("click", () => {
   resetView();
@@ -299,7 +334,35 @@ debugToggle.addEventListener("click", () => {
 });
 
 settingsButton.addEventListener("click", () => {
-  // Placeholder for future viewer preferences.
+  const hidden = settingsPanel.classList.toggle("is-hidden");
+  settingsButton.classList.toggle("is-active", !hidden);
+  settingsButton.setAttribute("aria-expanded", String(!hidden));
+});
+
+soundToggle.addEventListener("change", () => {
+  state.soundEnabled = soundToggle.checked;
+  if (state.soundEnabled && state.soundVolume <= 0) {
+    state.soundVolume = 0.35;
+  }
+  saveSoundSettings();
+  syncSoundControls();
+});
+
+soundVolume.addEventListener("input", () => {
+  state.soundVolume = clamp(Number(soundVolume.value) / 100, 0, 1);
+  saveSoundSettings();
+  syncSoundControls();
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (settingsPanel.classList.contains("is-hidden")) return;
+  if (event.target.closest("#settingsPanel, #settingsButton")) return;
+  closeSettingsPanel();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  closeSettingsPanel();
 });
 
 canvas.addEventListener("pointerdown", (event) => {
@@ -513,24 +576,16 @@ async function inspectFiles(files) {
         detail: "",
       };
 
-      if (ext === "tim") {
-        entry.detail = await inspectTim(file);
-        const image = classifyAsset({ path: file.name, size: file.size, file });
-        state.assets = [image];
-        state.models = [];
-        state.images = [image];
-        renderImageList();
-        await loadLooseImage(file, image);
-      } else if (ext === "emd" || ext === "ivm") {
-        const model = loadModelBytes(
-          new Uint8Array(await file.arrayBuffer()),
-          file.name,
-        );
-        entry.detail = `Loaded EMD: ${model.objectCount} objects, ${model.vertices.length / 3} vertices, ${model.indices.length / 3} triangles.`;
-      } else if (["bin", "iso", "img"].includes(ext)) {
+      if (!allowedUploadExtensions.has(ext)) {
+        entry.detail = "Rejected: this hosted viewer only accepts .bin disc images.";
+        state.files.push(entry);
+        continue;
+      }
+
+      try {
         entry.detail = await inspectIso(file);
-      } else {
-        entry.detail = "Queued for later format sniffing.";
+      } catch (error) {
+        entry.detail = `Rejected: ${error.message || "could not read this BIN file."}`;
       }
 
       state.files.push(entry);
@@ -823,9 +878,10 @@ function createAssetTile(asset) {
   const thumbnail = asset.renderable
     ? state.assetThumbs[asset.path]
     : state.imageThumbs[asset.path];
+  const thumbnailSrc = safeDataImageSrc(thumbnail);
   button.innerHTML = `
-    <span class="tile-preview ${thumbnail ? "has-thumb" : ""}">
-      ${thumbnail ? `<img src="${thumbnail}" alt="">` : `<span>${escapeHtml(tileFallbackText(asset))}</span>`}
+    <span class="tile-preview ${thumbnailSrc ? "has-thumb" : ""}">
+      ${thumbnailSrc ? `<img src="${escapeHtml(thumbnailSrc)}" alt="">` : `<span>${escapeHtml(tileFallbackText(asset))}</span>`}
     </span>
     <span class="tile-meta">
       <strong>${escapeHtml(displayAssetName(asset))}</strong>
@@ -843,6 +899,7 @@ function createAssetTile(asset) {
 function createImageGroupTile(group) {
   const firstImage = group.items[0];
   const thumbnail = group.items.map((image) => state.imageThumbs[image.path]).find(Boolean);
+  const thumbnailSrc = safeDataImageSrc(thumbnail);
   const selected = group.items.some((image) => image.path === state.selectedImagePath);
   const button = document.createElement("button");
   button.type = "button";
@@ -850,8 +907,8 @@ function createImageGroupTile(group) {
   button.className = selected ? "model-tile is-selected" : "model-tile";
   button.disabled = state.busyDepth > 0 || !firstImage;
   button.innerHTML = `
-    <span class="tile-preview ${thumbnail ? "has-thumb" : ""}">
-      ${thumbnail ? `<img src="${thumbnail}" alt="">` : `<span>ROOM</span>`}
+    <span class="tile-preview ${thumbnailSrc ? "has-thumb" : ""}">
+      ${thumbnailSrc ? `<img src="${escapeHtml(thumbnailSrc)}" alt="">` : `<span>ROOM</span>`}
     </span>
     <span class="tile-meta">
       <strong>${escapeHtml(group.name)}</strong>
@@ -1167,13 +1224,14 @@ function createImageListButton(image) {
     image.path === state.selectedImagePath ? "is-selected" : "";
   button.disabled = state.busyDepth > 0;
   const thumbnail = state.imageThumbs[image.path];
+  const thumbnailSrc = safeDataImageSrc(thumbnail);
   const subLabel = image.kind === "background" ? "Room screens" : image.label;
   button.innerHTML = `
     <span class="asset-name">${escapeHtml(displayAssetName(image))}</span>
     <small>${formatBytes(image.size)}</small>
     <span class="asset-path">${escapeHtml(image.path)}</span>
     <span class="asset-kind">${escapeHtml(subLabel)}</span>
-    ${thumbnail ? `<span class="asset-preview"><img src="${thumbnail}" alt=""></span>` : ""}
+    ${thumbnailSrc ? `<span class="asset-preview"><img src="${escapeHtml(thumbnailSrc)}" alt=""></span>` : ""}
   `;
   bindImageButton(button, image);
   return button;
@@ -1705,6 +1763,40 @@ function saveModelTransitionEnabled() {
   );
 }
 
+function loadSoundEnabled() {
+  try {
+    return window.localStorage.getItem("re1-model-viewer.soundEnabled") !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function loadSoundVolume() {
+  try {
+    const raw = window.localStorage.getItem("re1-model-viewer.soundVolume");
+    if (raw === null) return 0.35;
+    const stored = Number(raw);
+    return clamp(Number.isFinite(stored) ? stored : 0.35, 0, 1);
+  } catch {
+    return 0.35;
+  }
+}
+
+function saveSoundSettings() {
+  try {
+    window.localStorage.setItem(
+      "re1-model-viewer.soundEnabled",
+      state.soundEnabled ? "on" : "off",
+    );
+    window.localStorage.setItem(
+      "re1-model-viewer.soundVolume",
+      String(state.soundVolume),
+    );
+  } catch {
+    // File/browser privacy modes can block storage; sound still works for the session.
+  }
+}
+
 function syncAnimationFpsControl() {
   animationFps.value = String(state.animationFps);
   animationFpsValue.value = String(state.animationFps);
@@ -1715,6 +1807,20 @@ function syncRenderControls() {
   textureToggle.checked = state.texture;
   animateToggle.checked = state.animate;
   modelTransitionToggle.checked = state.modelTransitionEnabled;
+}
+
+function syncSoundControls() {
+  buttonBeep.volume = state.soundVolume;
+  soundToggle.checked = state.soundEnabled;
+  soundVolume.value = String(Math.round(state.soundVolume * 100));
+  soundVolume.disabled = !state.soundEnabled;
+  soundVolumeValue.textContent = `${Math.round(state.soundVolume * 100)}%`;
+}
+
+function closeSettingsPanel() {
+  settingsPanel.classList.add("is-hidden");
+  settingsButton.classList.remove("is-active");
+  settingsButton.setAttribute("aria-expanded", "false");
 }
 
 function setupTooltips() {
@@ -4274,4 +4380,9 @@ function escapeHtml(value) {
         "'": "&#39;",
       })[char],
   );
+}
+
+function safeDataImageSrc(value) {
+  const src = String(value || "");
+  return /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+$/i.test(src) ? src : "";
 }

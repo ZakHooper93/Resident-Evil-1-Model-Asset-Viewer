@@ -1,0 +1,96 @@
+﻿@media (max-width: 820px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(360px, 58vh) minmax(0, 1fr);
+  }
+
+  .viewport {
+    min-height: 0;
+  }
+
+  .sidebar {
+    min-height: auto;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .viewport-toolbar {
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    display: flex;
+    flex-wrap: nowrap;
+    grid-template-columns: none;
+    gap: 6px;
+    max-width: none;
+    margin: 0 8px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: flex-end;
+    scrollbar-width: thin;
+  }
+
+  .toolbar-group {
+    flex: 0 0 auto;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(74px, auto);
+    grid-template-columns: none;
+    gap: 3px;
+    overflow: visible;
+    padding: 4px;
+  }
+
+  .toolbar-group button,
+  .toolbar-group .toggle,
+  .toolbar-group .clip-select,
+  .toolbar-group .speed-control {
+    min-height: 30px;
+    padding: 0 7px;
+    font-size: 0.66rem;
+  }
+
+  .animation-tools {
+    width: auto;
+    grid-template-columns: none;
+    grid-auto-columns: auto minmax(110px, auto) minmax(92px, auto)
+      minmax(150px, auto);
+  }
+
+  .clip-select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .speed-control {
+    grid-template-columns: auto minmax(76px, 1fr) 24px;
+    width: 100%;
+  }
+
+  .speed-control input {
+    width: 100%;
+  }
+
+  .viewport-help {
+    display: none;
+  }
+
+  .image-viewer {
+    inset: 0 0 76px;
+  }
+
+  .image-frame-header {
+    align-items: center;
+  }
+
+  .model-dock {
+    min-height: 104px;
+    padding: 10px;
+  }
+
+  .model-tile {
+    grid-template-rows: 60px auto;
+    flex-basis: 122px;
+    width: 122px;
+  }
+}

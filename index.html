@@ -115,8 +115,8 @@
           <div class="command-grid">
             <div id="dropZone" class="drop-zone" tabindex="0">
               <strong>Load Disc</strong>
-              <span>BIN / ISO / model</span>
-              <input id="filePicker" type="file" multiple>
+              <span>BIN only</span>
+              <input id="filePicker" type="file" accept=".bin">
             </div>
             <button id="prevModel" type="button" title="Previous matching asset">Prev</button>
             <button id="nextModel" type="button" title="Next matching asset">Next</button>
@@ -176,7 +176,19 @@
 
         <section class="panel utility-panel" aria-label="Viewer utilities">
           <button id="debugToggle" class="utility-button" type="button" title="Show technical details" aria-controls="debugOverlay" aria-expanded="false">i</button>
-          <button id="settingsButton" class="utility-button" type="button" title="Settings placeholder" disabled aria-disabled="true">⚙</button>
+          <button id="settingsButton" class="utility-button" type="button" title="Viewer settings" aria-controls="settingsPanel" aria-expanded="false">&#9881;</button>
+          <div id="settingsPanel" class="settings-panel is-hidden" role="dialog" aria-label="Viewer settings">
+            <h2>Settings</h2>
+            <label class="settings-row toggle">
+              <input id="soundToggle" type="checkbox">
+              <span>Button beep</span>
+            </label>
+            <label class="settings-row settings-volume">
+              <span>Volume</span>
+              <input id="soundVolume" type="range" min="0" max="100" step="1" aria-label="Button beep volume">
+              <output id="soundVolumeValue">35%</output>
+            </label>
+          </div>
         </section>
       </aside>
     </main>
